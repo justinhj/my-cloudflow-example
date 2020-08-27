@@ -30,7 +30,7 @@ trait InstantJsonSupport extends DefaultJsonProtocol {
 }
 
 object MeasurementsJsonSupport extends DefaultJsonProtocol {
-  implicit val measurementFormat = jsonFormat3(Measurements.apply)
+  implicit val measurementFormat = jsonFormat4(Measurements.apply)
 }
 
 object SensorDataJsonSupport extends DefaultJsonProtocol with UUIDJsonSupport with InstantJsonSupport {

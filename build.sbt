@@ -3,7 +3,8 @@ import sbt.Keys._
 
 //tag::local-conf[]
 lazy val sensorData =  (project in file("."))
-    .enablePlugins(CloudflowApplicationPlugin, CloudflowAkkaPlugin, ScalafmtPlugin)
+    .enablePlugins(CloudflowApplicationPlugin, CloudflowAkkaPlugin, ScalafmtPlugin, CloudflowFlinkPlugin)
+
     .settings(
       scalaVersion := "2.12.11",
       runLocalConfigFile := Some("src/main/resources/local.conf"),

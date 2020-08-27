@@ -11,6 +11,9 @@
          },
          {
             "name": "windSpeed", "type": "double"
+         },
+         {
+            "name": "state", "type": "int"
          }
     ]
 }

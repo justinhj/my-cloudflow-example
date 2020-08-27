@@ -9,10 +9,13 @@ import SensorDataJsonSupport._
 import akka.stream.scaladsl._
 import scala.concurrent.duration._
 import spray.json._
+import org.slf4j.LoggerFactory
 
 class SensorDataFileIngress extends AkkaServerStreamlet {
   val out   = AvroOutlet[SensorData]("out").withPartitioner(RoundRobinPartitioner)
   def shape = StreamletShape.withOutlets(out)
+
+  val logger = LoggerFactory.getLogger("SensorDataFileIngress")
 
   override def createLogic = new AkkaStreamletLogic() {
     val throttleElements = 2
@@ -29,10 +32,9 @@ class SensorDataFileIngress extends AkkaServerStreamlet {
   private def readSensorData() = {
     val inFares = this.getClass.getResourceAsStream("/sensorData.json")
     // 'fixing' JSON issues in input document
-    val str       = scala.io.Source.fromInputStream(inFares).mkString
-    val faresJson = s"[$str]".replaceAll("\n", ",\n").parseJson
-    val fares     = faresJson.convertTo[List[SensorData]]
-    println(s"Read ${fares.size} fares")
-    fares
+    val str  = scala.io.Source.fromInputStream(inFares).mkString.parseJson
+    val data = str.convertTo[List[SensorData]]
+    logger.warn(s"Read ${data.size} sensor data rows")
+    data
   }
 }

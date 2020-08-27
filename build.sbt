@@ -17,7 +17,8 @@ lazy val sensorData =  (project in file("."))
         "com.typesafe.akka"      %% "akka-http-spray-json"      % "10.1.12",
         "ch.qos.logback"         %  "logback-classic"           % "1.2.3",
         "com.typesafe.akka"      %% "akka-http-testkit"         % "10.1.12" % "test",
-        "org.scalatest"          %% "scalatest"                 % "3.0.8"  % "test"
+        "org.scalatest"          %% "scalatest"                 % "3.0.8"  % "test",
+        "com.typesafe.akka"      %% "akka-protobuf"             % "2.6.6"
       ),
       organization := "com.lightbend.cloudflow",
       headerLicense := Some(HeaderLicense.ALv2("(C) 2016-2020", "Lightbend Inc. <https://www.lightbend.com>")),

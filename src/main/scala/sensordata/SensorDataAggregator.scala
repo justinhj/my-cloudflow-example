@@ -20,26 +20,24 @@ class SensorDataAggregator extends FlinkStreamlet {
 
   override protected def createLogic() = new FlinkStreamletLogic {
 
-    override def buildExecutionGraph =
-      try {
-        val ds: KeyedStream[SensorData, UUID] = readStream(in).keyBy(sd => sd.deviceId)
+    override def buildExecutionGraph = {
 
-        ds.fold(Map.empty[Int, Int]) {
-            case (acc, sensor) => {
-              val stateCount = acc.getOrElse(sensor.measurements.state, 0)
-              val newCount   = stateCount + 1
-              logger.warn(s"State aggregate for ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
+      val ds: KeyedStream[SensorData, UUID] = readStream(in).keyBy(sd => sd.deviceId)
 
-              acc.updated(sensor.measurements.state, newCount)
-            }
-          }
-          .print()
-      } catch {
-        case t: Throwable =>
-          logger.error(t.toString())
+      ds.print()
 
-      }
+      // ds.fold(Map.empty[Int, Int]) {
+      //     case (acc, sensor) => {
+      //       val stateCount = acc.getOrElse(sensor.measurements.state, 0)
+      //       val newCount   = stateCount + 1
+      //       logger.warn(s"State aggregate for ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
 
+      //       acc.updated(sensor.measurements.state, newCount)
+      //     }
+      //   }
+      //   .print()
+
+    }
   }
 
 }

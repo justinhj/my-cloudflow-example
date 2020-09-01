@@ -12,10 +12,15 @@ import sbt.Keys._
   // skuber depends on 2.5.29
   val AkkaOperator  = "2.5.29"
 
+lazy val flinkDemo = (project in file ("flinkDemo"))
+    .enablePlugins(CloudflowApplicationPlugin, CloudflowFlinkPlugin)
+    .dependsOn(sensorData)
+
+
 //tag::local-conf[]
 lazy val sensorData =  (project in file("."))
-    .enablePlugins(CloudflowApplicationPlugin, CloudflowAkkaPlugin, ScalafmtPlugin, CloudflowFlinkPlugin)
-
+    .enablePlugins(CloudflowApplicationPlugin, CloudflowAkkaPlugin, ScalafmtPlugin)
+    //.dependsOn(flinkDemo)
     .settings(
       scalaVersion := "2.12.11",
       runLocalConfigFile := Some("src/main/resources/local.conf"),

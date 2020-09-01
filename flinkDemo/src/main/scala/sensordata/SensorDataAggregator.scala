@@ -10,11 +10,11 @@ import cloudflow.streamlets.StreamletShape
 import cloudflow.streamlets.avro._
 import cloudflow.flink._
 import org.slf4j.LoggerFactory
-import org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink
-import org.apache.flink.api.common.serialization.SimpleStringEncoder
-import org.apache.flink.core.fs.Path
-import org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy
-import java.util.concurrent.TimeUnit
+import org.apache.flink.api.common.functions.AggregateFunction
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
+import org.apache.flink.streaming.api.windowing.time.Time
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow
+import org.apache.flink.streaming.api.windowing.windows.GlobalWindow
 
 class SensorDataAggregator extends FlinkStreamlet {
 
@@ -23,31 +23,37 @@ class SensorDataAggregator extends FlinkStreamlet {
   @transient val in    = AvroInlet[SensorData]("in")
   @transient val shape = StreamletShape.withInlets(in)
 
-  val outputPath = "file:///tmp/sample.txt"
+  class SumAggregate extends AggregateFunction[SensorData, Map[Int, Int], Map[Int, Int]] {
+    override def createAccumulator() = Map.empty
 
-  val sink: StreamingFileSink[String] = StreamingFileSink
-    .forRowFormat(new Path(outputPath), new SimpleStringEncoder[String]("UTF-8"))
-    .withRollingPolicy(
-        DefaultRollingPolicy.builder()
-            .withRolloverInterval(TimeUnit.MINUTES.toMillis(15))
-            .withInactivityInterval(TimeUnit.MINUTES.toMillis(5))
-            .withMaxPartSize(1024 * 1024 * 1024)
-            .build())
-    .build()
+    override def add(sensor: SensorData, acc: Map[Int, Int]) = {
+      val stateCount = acc.getOrElse(sensor.measurements.state, 0)
+      val newCount   = stateCount + 1
+      logger.warn(s"State aggregate for ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
+      acc.updated(sensor.measurements.state, newCount)
+    }
+
+    override def getResult(accumulator: Map[Int, Int]) = accumulator
+
+    override def merge(a: Map[Int, Int], b: Map[Int, Int]) = {
+      b.foldLeft(a) {
+        case (acc, (k, v)) =>
+          val av = a.getOrElse(k, 0)
+          acc updated (k,(av + v))
+      }
+    }
+  }
 
   override protected def createLogic() = new FlinkStreamletLogic {
 
     override def buildExecutionGraph = {
 
-      val ds: KeyedStream[SensorData, UUID] = readStream(in).keyBy(sd => sd.deviceId)
+      val ds: WindowedStream[SensorData, UUID, GlobalWindow] =
+        readStream(in).
+          keyBy(sd => sd.deviceId).
+          countWindow(3)
 
-      val ss = ds.map {
-        x =>
-          logger.warn(s"Output string ${x.toString()}")
-          x.toString()
-      }
-
-      ss.addSink(sink)
+      ds.aggregate(new SumAggregate).print()
 
       // ds.fold(Map.empty[Int, Int]) {
       //     case (acc, sensor) => {
@@ -58,7 +64,7 @@ class SensorDataAggregator extends FlinkStreamlet {
       //       acc.updated(sensor.measurements.state, newCount)
       //     }
       //   }
-      //   .print()
+
 
     }
   }

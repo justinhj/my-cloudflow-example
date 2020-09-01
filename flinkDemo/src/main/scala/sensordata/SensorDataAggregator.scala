@@ -55,6 +55,17 @@ class SensorDataAggregator extends FlinkStreamlet {
 
       val ds: WindowedStream[SensorData, UUID, GlobalWindow] =
         readStream(in).
+          map {
+            elem => if(elem.measurements.rotorSpeed == 1.9) {
+              scala.util.Random.setSeed(System.currentTimeMillis())
+              if(scala.util.Random.nextBoolean()) {
+                // FAIL!
+                logger.error("Simulate random failure")
+                System.exit(-1)
+              }
+            }
+            elem
+          }.
           keyBy(sd => sd.deviceId).
           countWindow(10,5)
 

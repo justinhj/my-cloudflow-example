@@ -1,0 +1,13 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+*.class
+build
+
+.vscode/
+project/project/
+project/target/
+target-env.sbt
+target/

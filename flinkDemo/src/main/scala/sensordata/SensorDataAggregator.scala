@@ -30,6 +30,7 @@ class SensorDataAggregator extends FlinkStreamlet {
       val stateCount = acc.getOrElse(sensor.measurements.state, 0)
       val newCount   = stateCount + 1
       logger.warn(s"add: ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
+
       acc.updated(sensor.measurements.state, newCount)
     }
 
@@ -57,8 +58,24 @@ class SensorDataAggregator extends FlinkStreamlet {
           keyBy(sd => sd.deviceId).
           countWindow(10,5)
 
-      ds.aggregate(new SumAggregate).print()
+      ds.aggregate(new SumAggregate).map{
+        stateMap =>
+          // Check for missing states indicating invalid state transition
+          val minState = stateMap.keys.min
+          val maxState = stateMap.keys.max
+          val allStates = stateMap.keys.toSet
+          val valid = (minState to maxState).forall {
+            state =>
+              allStates.contains(state)
+          }
+          if(!valid) {
+            logger.error(s"Missing state! $allStates")
+          }
+          valid
+      }
 
+      // Note this a more convenient way to fold over data but it is deprecated and should be done using windows of data
+      // as above...
       // ds.fold(Map.empty[Int, Int]) {
       //     case (acc, sensor) => {
       //       val stateCount = acc.getOrElse(sensor.measurements.state, 0)
@@ -68,7 +85,6 @@ class SensorDataAggregator extends FlinkStreamlet {
       //       acc.updated(sensor.measurements.state, newCount)
       //     }
       //   }
-
 
     }
   }

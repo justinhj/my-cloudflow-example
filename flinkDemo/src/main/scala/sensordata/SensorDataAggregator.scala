@@ -29,13 +29,17 @@ class SensorDataAggregator extends FlinkStreamlet {
     override def add(sensor: SensorData, acc: Map[Int, Int]) = {
       val stateCount = acc.getOrElse(sensor.measurements.state, 0)
       val newCount   = stateCount + 1
-      logger.warn(s"State aggregate for ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
+      logger.warn(s"add: ${sensor.deviceId} state ${sensor.measurements.state} count $newCount")
       acc.updated(sensor.measurements.state, newCount)
     }
 
-    override def getResult(accumulator: Map[Int, Int]) = accumulator
+    override def getResult(accumulator: Map[Int, Int]) = {
+      logger.warn(s"getResult: $accumulator")
+      accumulator
+    }
 
     override def merge(a: Map[Int, Int], b: Map[Int, Int]) = {
+      logger.warn(s"merge")
       b.foldLeft(a) {
         case (acc, (k, v)) =>
           val av = a.getOrElse(k, 0)
@@ -51,7 +55,7 @@ class SensorDataAggregator extends FlinkStreamlet {
       val ds: WindowedStream[SensorData, UUID, GlobalWindow] =
         readStream(in).
           keyBy(sd => sd.deviceId).
-          countWindow(3)
+          countWindow(10,5)
 
       ds.aggregate(new SumAggregate).print()
 

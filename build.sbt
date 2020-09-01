@@ -14,7 +14,8 @@ lazy val root =
     .settings(commonSettings)
     .aggregate(
       flinkDemo,
-      sensorData)
+      sensorData,
+      dataModel)
 
 lazy val flinkDemo = appModule("flinkDemo")
   .enablePlugins(CloudflowFlinkPlugin)
@@ -25,7 +26,7 @@ lazy val flinkDemo = appModule("flinkDemo")
       "org.scalatest"          %% "scalatest"              % "3.0.8"  % "test"
     )
   )
-  .dependsOn(sensorData)
+  .dependsOn(dataModel)
 
 //tag::local-conf[]
 lazy val sensorData =  (project in file("sensorDemo"))
@@ -38,6 +39,14 @@ lazy val sensorData =  (project in file("sensorDemo"))
       "org.scalatest"             %% "scalatest"              % "3.0.8"    % "test"
     )
   )
+  .dependsOn(dataModel)
+
+lazy val dataModel = appModule("dataModel")
+  .enablePlugins(CloudflowLibraryPlugin)
+  .settings(
+    commonSettings,
+  )
+
 
 def appModule(moduleID: String): Project = {
   Project(id = moduleID, base = file(moduleID))
